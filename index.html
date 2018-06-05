@@ -1,0 +1,184 @@
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Mag ik naar China?</title>
+    <link rel="stylesheet" type="text/css" href="main.css">
+
+    <script src="https://cdn.rawgit.com/ethereum/web3.js/develop/dist/web3.js"></script>
+    <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js"></script>
+    <script>
+
+        if (typeof web3 !== 'undefined') {
+
+            web3 = new Web3(web3.currentProvider);
+            if (web3.eth.accounts[0]) {
+                web3.eth.defaultAccount = web3.eth.accounts[0];
+                var account = web3.eth.accounts[0];
+                var accountInterval = setInterval(function () {
+                    if (web3.eth.accounts[0] !== account) {
+                        account = web3.eth.accounts[0];
+                    }
+                }, 100);
+
+                var jqueryisabitch = setTimeout(function () {
+                    getNetwork();
+                }, 100);
+            }
+            else {
+                var jqueryisabitch = setTimeout(function () {
+                    status("Het ziet ernaar uit dat je nog niet ingelogt bent in Metamask. Zorg ook dat je het Rinkeby Test Net hebt geselecteerd!");
+                }, 100);
+                var accountInterval = setInterval(function () {
+                    if (web3.eth.accounts[0]) {
+                        getNetwork();
+                    }
+                }, 100);
+            }
+
+        } else {
+            console.log('No web3? You should consider trying MetaMask!');
+
+            var jqueryisabitch = setTimeout(function () {
+                status("Het ziet ernaar uit dat je nog geen Meta-mask plugin hebt geinstalleerd!!");
+            }, 100);
+
+        }
+
+        var abi = [
+            {
+                "constant": false,
+                "inputs": [
+                    {
+                        "name": "_answer",
+                        "type": "string"
+                    }
+                ],
+                "name": "setAnswer",
+                "outputs": [],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "getAnswer",
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "name": "answer",
+                        "type": "string"
+                    }
+                ],
+                "name": "AnswerEvent",
+                "type": "event"
+            }
+        ]
+        var AnswerContract = web3.eth.contract(abi);
+        var contractAddress = '0xb7896ec1dabd4aea3e1a60c67da940b5bf4b40cc'
+        var instance = AnswerContract.at(contractAddress);
+        console.log(instance);
+
+
+        // get answer command, display it in text.
+        getAnswer();
+
+        function getNetwork() {
+            web3.version.getNetwork((err, netId) => {
+                switch (netId) {
+                    case "1":
+                        status("Je zit op het echte main netwerk van ethereum. Je moet in meta-mask Rinkeby selecteren!");
+                        break
+                    case "4":
+                        web3.eth.getBalance(web3.eth.accounts[0], function (error, result) {
+                            if (error) {
+                            } else {
+                                status("Succesvol verbonden met het Rinkeby netwerk. Er zit " + web3.fromWei(result, "ether") + " ethereum in je account")
+                            }
+                        })
+                        break
+                    default:
+                        status('Verbonden met een onbekend netwerk. Zorg dat je Rinkeby selecteerd!');
+
+                }
+            })
+        }
+
+        function status(newstatus) {
+            console.log("status");
+            $('#state').text(newstatus)
+        }
+
+        var answerEvent = instance.AnswerEvent();
+        answerEvent.watch(function (err, result) {
+            if (!err) {
+                console.log(result);
+                $('#answer').text("Het antwoord is : " + result.args.answer);
+                $("#loader").hide();
+                $("#clicked").hide();
+                getNetwork();
+            } else {
+               
+            }
+
+        });
+        function getAnswer() {
+            instance.getAnswer(function (err, result) {
+                console.log(result);
+                $('#answer').text("Het antwoord is : " + result.toString())
+                if(result.toString() != "Geen antwoord gegeven"){
+                    $("#button").hide();
+                    $("#answerinput").hide();
+                    $("#labelinput").hide();
+                }
+            })
+
+        }
+        //set answer
+        function setAnswer() {
+            instance.setAnswer($("#answerinput").val(), function (err, result) {
+                console.log(result);
+                $("#loader").show();
+                $("#button").hide();
+                $("#answerinput").hide();
+                $("#labelinput").hide();
+                getNetwork();
+                $('#clicked').text("Het bericht is succesvol verstuurd! Na enkele seconden zal het antwoord op de blockchain staan en zal de text hierboven aanpassen")
+            })
+        }
+
+    </script>
+</head>
+
+<body>
+    <h1>Hello en welkom bij de mag ik naar china zet het antwoord permanent op de block-chain Dapp!</h1>
+    <p>Let op! alles in de blockchain is permanent. En het is maar 1 keer mogelijk om een antwoord te geven op deze vraag. Mag
+        ik naar China?
+    </p>
+    <p id="state"></p>
+    <p id="answer" class="answer"> Er is nog geen antwoord gegeven op deze vraag.</p>
+
+    <label for="answerinput" id="labelinput">Antwoord</label>
+    <input id="answerinput" type="text">
+    <button onclick='setAnswer()' id ="button">Stuur antwoord naar Blockchain.</button>
+    <img id="loader" src="load.gif">
+    <p id="clicked"></p>
+
+</body>
+
+</html>
